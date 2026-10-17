@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Workers Attendence</title>
+<style>
+:root{--navy:#14243a;--blue:#2563eb;--bg:#f3f6fb;--card:#fff;--text:#172033;--muted:#667085;--line:#e3e8f0;--red:#b42318;--green:#067647}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{background:var(--navy);color:#fff;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-weight:800;font-size:22px;letter-spacing:.2px}.sub{color:#cbd5e1;font-size:12px}.wrap{max-width:1180px;margin:22px auto;padding:0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px #17203308}
+h1,h2,h3{margin:0 0 12px}h2{font-size:19px}h3{font-size:16px}.muted{color:var(--muted);font-size:13px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{display:block;font-weight:650;font-size:13px;margin:0 0 5px}input,select,button{font:inherit}input,select{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:10px;background:#fff;color:var(--text)}input:focus,select:focus{outline:2px solid #93c5fd;border-color:var(--blue)}
+button{border:0;border-radius:8px;background:var(--blue);color:#fff;padding:10px 14px;cursor:pointer;font-weight:650}button:hover{filter:brightness(.96)}button.secondary{background:#e9eef6;color:#243449}button.danger{background:#fee4e2;color:var(--red)}button.small{padding:6px 9px;font-size:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.nav button{background:#e6ebf3;color:#27364b}.nav button.active{background:var(--blue);color:#fff}
+.statrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.stat{padding:14px;border-radius:10px;background:#f0f5ff;border:1px solid #dce8ff}.stat b{font-size:24px;display:block}.stat span{color:var(--muted);font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}th,td{text-align:left;border-bottom:1px solid var(--line);padding:10px 9px;vertical-align:top}th{background:#f8fafc;color:#344054;white-space:nowrap}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px}
+.hidden{display:none!important}.notice{padding:11px 13px;border-radius:9px;background:#fff7e6;border:1px solid #f4d58d;color:#7a4b00;font-size:13px;margin-bottom:14px}.success{background:#ecfdf3;border-color:#abefc6;color:var(--green)}.error{background:#fef3f2;border-color:#fecdca;color:var(--red)}
+.loginbox{max-width:440px;margin:45px auto}.full{width:100%}.field{margin-bottom:12px}.pill{display:inline-block;border-radius:99px;padding:3px 8px;font-size:11px;font-weight:700;background:#e8efff;color:#1d4ed8}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:18px}
+@media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.statrow{grid-template-columns:1fr 1fr}.wrap{margin:14px auto;padding:0 10px}.card{padding:14px}header{padding:15px}.brand{font-size:20px}}
+@media(max-width:420px){.grid{grid-template-columns:1fr}.statrow{grid-template-columns:1fr}}
+@media print{header,.nav,.no-print,button,footer{display:none!important}body{background:#fff}.wrap{max-width:none;margin:0;padding:0}.card{box-shadow:none;border:0;padding:0}.tablewrap{overflow:visible;border:0}table{min-width:0;font-size:10px}th,td{padding:5px}body *{color:#000!important}.print-title{display:block!important}}
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#14243a">
+<link rel="icon" href="icon-192.png" type="image/png">
+</head>
+<body>
+<header><div><div class="brand">Workers Attendence</div><div class="sub">Worker Time & Attendance Management</div></div><div style="display:flex;align-items:center;gap:10px"><div id="sessionInfo" class="sub"></div><button id="logoutBtn" class="secondary hidden" type="button">Logout</button></div></header>
+<div class="wrap">
+<section id="setupView" class="card loginbox hidden">
+<h2>Initial Admin Setup</h2>
+<p class="muted">Pehli dafa app use kar rahe hain. Admin account banayein. Is local app ka data isi browser mein save hoga.</p>
+<div class="field"><label>Admin Username</label><input id="setupUser" autocomplete="username" placeholder="admin"></div>
+<div class="field"><label>Admin Password</label><input id="setupPass" type="password" autocomplete="new-password" placeholder="At least 8 characters"></div>
+<div class="field"><label>Confirm Password</label><input id="setupConfirm" type="password" autocomplete="new-password"></div>
+<button id="createAdmin" class="full">Create Admin Account</button><p id="setupMsg" class="muted"></p>
+</section>
+<section id="loginView" class="card loginbox hidden">
+<h2>Login</h2><p class="muted">Sirf Admin aur Supervisor ke authorized accounts.</p>
+<form id="loginForm">
+<div class="field"><label>Username</label><input id="loginUser" autocomplete="username" required></div>
+<div class="field"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password" required></div>
+<button class="full" type="submit">Login</button>
+</form><p id="loginMsg" class="muted"></p>
+</section>
+<section id="appView" class="hidden">
+<div class="notice"><b>Local-only app:</b> data isi computer/browser mein save hota hai. Browser data clear karne ya computer badalne se records lose ho sakte hain. Export regular backups. Ye prototype local storage use karta hai, is liye highly sensitive company records ke liye server-based secure app behtar hai.</div>
+<div class="nav no-print" id="nav">
+<button data-tab="dashboard" class="active">Dashboard</button><button data-tab="attendance">Attendance Entry</button><button data-tab="reports">Reports & Export</button><button data-tab="workers" class="admin-only">Workers</button><button data-tab="users" class="admin-only">User Access</button><button data-tab="backup" class="admin-only">Backup / Restore</button>
+</div>
+<div id="tab-dashboard" class="tab">
+<div class="card"><h2>Dashboard</h2><p class="muted" id="todayLine"></p><div class="statrow"><div class="stat"><b id="workerCount">0</b><span>Active Workers</span></div><div class="stat"><b id="todayCount">0</b><span>Attendance Records Today</span></div><div class="stat"><b id="otCount">0.0</b><span>Overtime Hours Today</span></div></div></div>
+<div class="card"><h2>Today's Attendance</h2><div id="todayTable" class="tablewrap"></div></div>
+</div>
+<div id="tab-attendance" class="tab hidden">
+<div class="card"><h2>Attendance Entry</h2><p class="muted">Worker select karein, date aur Time IN/OUT enter karein. Day aur Year automatic fill honge.</p>
+<form id="attendanceForm">
+<input type="hidden" id="attId">
+<div class="grid">
+<div class="field"><label>Worker</label><select id="attWorker" required></select></div>
+<div class="field"><label>Date</label><input type="date" id="attDate" required></div>
+<div class="field"><label>Day</label><input id="attDay" readonly></div>
+<div class="field"><label>Year</label><input id="attYear" readonly></div>
+<div class="field"><label>Time IN</label><input type="time" id="timeIn"></div>
+<div class="field"><label>Time OUT</label><input type="time" id="timeOut"></div>
+<div class="field"><label>Overtime (hours)</label><input type="number" id="overtime" min="0" step="0.25" value="0" placeholder="0.0"></div>
+</div>
+<div class="actions"><button type="submit">Save Attendance</button><button type="button" id="clearAtt" class="secondary">Clear Form</button></div><p id="attMsg" class="muted"></p>
+</form></div>
+<div class="card"><h2>Recent Attendance</h2><div id="recentTable" class="tablewrap"></div></div>
+</div>
+<div id="tab-reports" class="tab hidden">
+<div class="card no-print"><h2>Reports & Export</h2><div class="grid">
+<div class="field"><label>From Date</label><input type="date" id="reportFrom"></div><div class="field"><label>To Date</label><input type="date" id="reportTo"></div><div class="field"><label>Worker</label><select id="reportWorker"><option value="">All Workers</option></select></div><div class="field"><label>Search Worker ID/Name</label><input id="reportSearch" placeholder="Search..."></div>
+</div><div class="actions"><button id="runReport">Generate Report</button><button id="exportCsv" class="secondary">Download Excel-compatible CSV</button><button id="exportPdf" class="secondary">Print / Save as PDF</button></div><p class="muted">CSV file Microsoft Excel mein open ho sakti hai. PDF ke liye Print khol kar “Save as PDF” choose karein.</p></div>
+<div class="card"><h2 class="print-title hidden">Workers Attendence — Report</h2><p id="reportSummary" class="muted"></p><div id="reportTable" class="tablewrap"></div></div>
+</div>
+<div id="tab-workers" class="tab hidden">
+<div class="card"><h2>Add Worker</h2><form id="workerForm"><input type="hidden" id="workerEditId"><div class="grid2"><div class="field"><label>Worker ID</label><input id="workerId" required placeholder="e.g. W-001"></div><div class="field"><label>Worker Name</label><input id="workerName" required placeholder="Full name"></div></div><div class="actions"><button type="submit">Save Worker</button><button type="button" id="clearWorker" class="secondary">Clear</button></div><p id="workerMsg" class="muted"></p></form></div>
+<div class="card"><h2>Workers List</h2><div id="workersTable" class="tablewrap"></div></div>
+</div>
+<div id="tab-users" class="tab hidden">
+<div class="card"><h2>Add Supervisor Account</h2><p class="muted">Public signup band hai. Sirf Admin yahan se Supervisor account bana sakta hai.</p><form id="userForm"><div class="grid"><div class="field"><label>Username</label><input id="newUsername" required autocomplete="off"></div><div class="field"><label>Display Name</label><input id="newDisplay" required></div><div class="field"><label>Password</label><input id="newPassword" type="password" required minlength="8" autocomplete="new-password"></div><div class="field"><label>Role</label><input value="Supervisor" readonly></div></div><button type="submit">Create Supervisor</button><p id="userMsg" class="muted"></p></form></div>
+<div class="card"><h2>Authorized Users</h2><div id="usersTable" class="tablewrap"></div></div>
+</div>
+<div id="tab-backup" class="tab hidden">
+<div class="card"><h2>Backup & Restore</h2><p class="muted">Regularly export a backup JSON file and keep it in a safe location. Restoring replaces the current app data.</p><div class="actions"><button id="backupBtn">Download Full Backup</button><label class="secondary" style="display:inline-flex;align-items:center;padding:10px 14px;border-radius:8px;cursor:pointer">Restore Backup JSON<input id="restoreFile" type="file" accept=".json,application/json" style="display:none"></label></div><p id="backupMsg" class="muted"></p></div>
+<div class="card"><h2>Reset Data</h2><p class="muted">This permanently clears workers and attendance on this browser. Admin account will remain.</p><button id="resetData" class="danger">Clear Workers & Attendance</button></div>
+</div>
+</section>
+</div><footer>Workers Attendence · Local browser prototype</footer>
+<script>
+(function(){
+const KEY='workersAttendenceData_v1', SESSION='workersAttendenceSession_v1';
+const $=id=>document.getElementById(id);
+const dayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+let db={users:[],workers:[],attendance:[]}, current=null, activeTab='dashboard', reportRows=[];
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const save=()=>localStorage.setItem(KEY,JSON.stringify(db));
+const load=()=>{try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&Array.isArray(x.users))db=x}catch(e){}};
+const msg=(id,text,cls='')=>{const e=$(id);e.textContent=text;e.className=cls||'muted'};
+const fmtDate=s=>{if(!s)return '';const d=new Date(s+'T12:00:00');return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`};
+const workerById=id=>db.workers.find(w=>w.id===id);
+const canAdmin=()=>current&&current.role==='Admin';
+function setView(){const hasAdmin=db.users.some(u=>u.role==='Admin');$('logoutBtn').classList.toggle('hidden',!current);$('setupView').classList.toggle('hidden',hasAdmin);$('loginView').classList.toggle('hidden',!hasAdmin||!!current);$('appView').classList.toggle('hidden',!current);$('sessionInfo').textContent=current?`${current.display} · ${current.role}`:'';document.querySelectorAll('.admin-only').forEach(e=>e.classList.toggle('hidden',!canAdmin()));if(current)renderAll();}
+function showTab(tab){activeTab=tab;document.querySelectorAll('.tab').forEach(e=>e.classList.add('hidden'));$('tab-'+tab).classList.remove('hidden');document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));renderAll();}
+function table(headers,rows){if(!rows.length)return '<p class="muted" style="padding:12px">No records found.</p>';return '<table><thead><tr>'+headers.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table>'}
+function attendanceRows(list,actions=false){return list.map(a=>{const w=workerById(a.workerRef);return [esc(w?.workerId||'—'),esc(w?.name||'Worker removed'),esc(fmtDate(a.date)),esc(a.day||''),esc(a.year||''),esc(a.in||'—'),esc(a.out||'—'),esc(a.overtime??0),actions?`<button class="small secondary" data-edit-att="${esc(a.id)}">Edit</button> <button class="small danger" data-del-att="${esc(a.id)}">Delete</button>`:''];}).map(r=>actions?r:r.slice(0,8))}
+function renderAll(){if(!current)return;const d=today(),todayRecords=db.attendance.filter(a=>a.date===d);$('todayLine').textContent='Today: '+dayNames[new Date().getDay()]+' · '+fmtDate(d);$('workerCount').textContent=db.workers.length;$('todayCount').textContent=todayRecords.length;$('otCount').textContent=todayRecords.reduce((n,a)=>n+(Number(a.overtime)||0),0).toFixed(2);
+$('todayTable').innerHTML=table(['Worker ID','Worker Name','Date','Day','Year','Time IN','Time OUT','OT Hours'],attendanceRows(todayRecords));
+$('recentTable').innerHTML=table(['Worker ID','Worker Name','Date','Day','Year','Time IN','Time OUT','OT Hours',...(canAdmin()?['Actions']:[])],attendanceRows([...db.attendance].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,30),canAdmin()));
+$('workersTable').innerHTML=table(['Worker ID','Worker Name','Actions'],db.workers.map(w=>[esc(w.workerId),esc(w.name),`<button class="small secondary" data-edit-worker="${esc(w.id)}">Edit</button> <button class="small danger" data-del-worker="${esc(w.id)}">Delete</button>`]));
+$('usersTable').innerHTML=table(['Username','Display Name','Role','Actions'],db.users.map(u=>[esc(u.username),esc(u.display),esc(u.role),u.id===current.id?'Current user':u.role==='Admin'?'Protected':`<button class="small danger" data-del-user="${esc(u.id)}">Remove</button>`]));
+fillWorkerSelects();runReport();
+}
+function fillWorkerSelects(){const old=$('attWorker').value;const options='<option value="">Select worker</option>'+db.workers.map(w=>`<option value="${esc(w.id)}">${esc(w.workerId)} — ${esc(w.name)}</option>`).join('');$('attWorker').innerHTML=options;if(db.workers.some(w=>w.id===old))$('attWorker').value=old;const rold=$('reportWorker').value;$('reportWorker').innerHTML='<option value="">All Workers</option>'+db.workers.map(w=>`<option value="${esc(w.id)}">${esc(w.workerId)} — ${esc(w.name)}</option>`).join('');if(db.workers.some(w=>w.id===rold))$('reportWorker').value=rold;}
+function dateMeta(){const s=$('attDate').value;if(!s)return;const d=new Date(s+'T12:00:00');$('attDay').value=dayNames[d.getDay()];$('attYear').value=d.getFullYear();}
+function clearAttendance(){$('attendanceForm').reset();$('attId').value='';$('attDate').value=today();$('overtime').value='0';dateMeta();msg('attMsg','');}
+function editAttendance(id){const a=db.attendance.find(x=>x.id===id);if(!a)return;showTab('attendance');$('attId').value=a.id;$('attWorker').value=a.workerRef;$('attDate').value=a.date;$('timeIn').value=a.in||'';$('timeOut').value=a.out||'';$('overtime').value=a.overtime??0;dateMeta();window.scrollTo({top:0,behavior:'smooth'});}
+function getFiltered(){let from=$('reportFrom').value,to=$('reportTo').value,wid=$('reportWorker').value,q=$('reportSearch').value.trim().toLowerCase();return db.attendance.filter(a=>{const w=workerById(a.workerRef);return(!from||a.date>=from)&&(!to||a.date<=to)&&(!wid||a.workerRef===wid)&&(!q||(`${w?.workerId||''} ${w?.name||''}`).toLowerCase().includes(q));}).sort((a,b)=>(a.date||'').localeCompare(b.date||''));}
+function runReport(){if(!current)return;reportRows=getFiltered();const ot=reportRows.reduce((n,a)=>n+(Number(a.overtime)||0),0);$('reportSummary').textContent=`Records: ${reportRows.length} · Total overtime: ${ot.toFixed(2)} hours`;$('reportTable').innerHTML=table(['Worker ID','Worker Name','Date','Day','Year','Time IN','Time OUT','OT Hours'],attendanceRows(reportRows));}
+function download(name,content,type){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
+function exportCsv(){const rows=[['Worker ID','Worker Name','Date','Day','Year','Time IN','Time OUT','Overtime (hours)'],...reportRows.map(a=>{const w=workerById(a.workerRef);return [w?.workerId||'',w?.name||'',a.date||'',a.day||'',a.year||'',a.in||'',a.out||'',a.overtime??0]})];const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');download('Workers_Attendence_Report.csv',csv,'text/csv;charset=utf-8;');}
+$('createAdmin').addEventListener('click',()=>{const username=$('setupUser').value.trim(),pass=$('setupPass').value,confirm=$('setupConfirm').value;if(!username||pass.length<8){msg('setupMsg','Username dein aur password kam az kam 8 characters ka ho.','error');return}if(pass!==confirm){msg('setupMsg','Passwords match nahi karte.','error');return}db.users.push({id:uid(),username,display:'Administrator',password:pass,role:'Admin'});save();msg('setupMsg','Admin account created. Ab login karein.','success');setView();$('loginUser').value=username;});
+$('loginForm').addEventListener('submit',e=>{e.preventDefault();const u=$('loginUser').value.trim().toLowerCase(),p=$('loginPass').value;const found=db.users.find(x=>x.username.toLowerCase()===u&&x.password===p);if(!found){msg('loginMsg','Username ya password ghalat hai.');return}current={id:found.id,username:found.username,display:found.display,role:found.role};sessionStorage.setItem(SESSION,JSON.stringify({id:found.id}));msg('loginMsg','');setView();});
+function logout(){current=null;sessionStorage.removeItem(SESSION);$('loginPass').value='';setView();}
+$('logoutBtn').addEventListener('click',logout);
+$('nav').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b)showTab(b.dataset.tab)});
+$('attDate').addEventListener('change',dateMeta);$('clearAtt').addEventListener('click',clearAttendance);
+$('attendanceForm').addEventListener('submit',e=>{e.preventDefault();const wid=$('attWorker').value,date=$('attDate').value;if(!wid){msg('attMsg','Pehle worker select karein.','error');return}if(!$('timeIn').value&&!$('timeOut').value){msg('attMsg','Time IN ya Time OUT mein se kam az kam ek enter karein.','error');return}const meta=new Date(date+'T12:00:00'),id=$('attId').value;const obj={id:id||uid(),workerRef:wid,date,day:dayNames[meta.getDay()],year:meta.getFullYear(),in:$('timeIn').value,out:$('timeOut').value,overtime:Number($('overtime').value)||0,updatedBy:current.username};if(id){const i=db.attendance.findIndex(a=>a.id===id);if(i>=0)db.attendance[i]=obj}else{const dup=db.attendance.find(a=>a.workerRef===wid&&a.date===date);if(dup){if(!confirm('Is worker ki is date par attendance pehle se hai. Kya us record ko update karna hai?'))return;obj.id=dup.id;db.attendance=db.attendance.filter(a=>a.id!==dup.id)}db.attendance.push(obj)}save();msg('attMsg','Attendance save ho gayi.','success');clearAttendance();renderAll();});
+$('workerForm').addEventListener('submit',e=>{e.preventDefault();if(!canAdmin())return;const id=$('workerEditId').value,workerId=$('workerId').value.trim(),name=$('workerName').value.trim();if(db.workers.some(w=>w.workerId.toLowerCase()===workerId.toLowerCase()&&w.id!==id)){msg('workerMsg','Ye Worker ID pehle se mojood hai.','error');return}if(id){const w=db.workers.find(w=>w.id===id);if(w){w.workerId=workerId;w.name=name}}else db.workers.push({id:uid(),workerId,name,createdAt:new Date().toISOString()});save();$('workerForm').reset();$('workerEditId').value='';msg('workerMsg','Worker save ho gaya.','success');renderAll()});
+$('clearWorker').addEventListener('click',()=>{$('workerForm').reset();$('workerEditId').value='';msg('workerMsg','')});
+$('userForm').addEventListener('submit',e=>{e.preventDefault();if(!canAdmin())return;const username=$('newUsername').value.trim(),display=$('newDisplay').value.trim(),password=$('newPassword').value;if(password.length<8){msg('userMsg','Password kam az kam 8 characters ka hona chahiye.','error');return}if(db.users.some(u=>u.username.toLowerCase()===username.toLowerCase())){msg('userMsg','Ye username pehle se mojood hai.','error');return}db.users.push({id:uid(),username,display,password,role:'Supervisor'});save();$('userForm').reset();msg('userMsg','Supervisor account create ho gaya.','success');renderAll()});
+document.addEventListener('click',e=>{const t=e.target;if(t.dataset.editAtt)editAttendance(t.dataset.editAtt);if(t.dataset.delAtt&&canAdmin()){if(confirm('Is attendance record ko delete karein?')){db.attendance=db.attendance.filter(a=>a.id!==t.dataset.delAtt);save();renderAll()}}if(t.dataset.editWorker&&canAdmin()){const w=db.workers.find(w=>w.id===t.dataset.editWorker);if(w){showTab('workers');$('workerEditId').value=w.id;$('workerId').value=w.workerId;$('workerName').value=w.name;window.scrollTo({top:0,behavior:'smooth'})}}if(t.dataset.delWorker&&canAdmin()){const w=db.workers.find(w=>w.id===t.dataset.delWorker);if(w&&confirm(`Worker ${w.name} delete karein? Attendance records retained rahenge.`)){db.workers=db.workers.filter(x=>x.id!==w.id);save();renderAll()}}if(t.dataset.delUser&&canAdmin()){const u=db.users.find(u=>u.id===t.dataset.delUser);if(u&&confirm(`Supervisor ${u.username} remove karein?`)){db.users=db.users.filter(x=>x.id!==u.id);save();renderAll()}}});
+$('runReport').addEventListener('click',runReport);$('exportCsv').addEventListener('click',()=>{runReport();exportCsv()});$('exportPdf').addEventListener('click',()=>{runReport();window.print()});
+$('backupBtn').addEventListener('click',()=>download('Workers_Attendence_Backup.json',JSON.stringify(db,null,2),'application/json'));
+$('restoreFile').addEventListener('change',async e=>{if(!canAdmin())return;const f=e.target.files[0];if(!f)return;try{const incoming=JSON.parse(await f.text());if(!Array.isArray(incoming.users)||!Array.isArray(incoming.workers)||!Array.isArray(incoming.attendance))throw Error('Invalid');if(!confirm('Restore karne se current data replace ho jayega. Continue?'))return;db=incoming;save();current=null;msg('backupMsg','Backup restore ho gaya. Dobara login karein.','success');setView()}catch(err){msg('backupMsg','Backup file valid nahi hai.','error')}e.target.value=''});
+$('resetData').addEventListener('click',()=>{if(!canAdmin())return;if(confirm('Workers aur attendance ka sara data permanently clear ho jayega. Kya aap sure hain?')){db.workers=[];db.attendance=[];save();renderAll();msg('backupMsg','Workers aur attendance clear ho gaye.','success')}});
+function init(){load();$('attDate').value=today();dateMeta();$('reportFrom').value=today().slice(0,8)+'01';$('reportTo').value=today();const sess=sessionStorage.getItem(SESSION);if(sess){try{const x=JSON.parse(sess),u=db.users.find(u=>u.id===x.id);if(u)current={id:u.id,username:u.username,display:u.display,role:u.role}}catch(e){}}setView();document.addEventListener('keydown',e=>{if(e.key==='Escape'&&current&&confirm('Logout karna hai?'))logout()});}
+init();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Offline support unavailable:', err)));
+}
+</script>
+</body>
+</html>
